@@ -25,7 +25,7 @@ export default function Register() {
   const handleGeneratePasskey = async () => {
     console.log('handleGeneratePasskey')
     try {
-      const challengeResponse = await fetch('/api/auth/challenge', {
+      const challengeResponse = await fetch('/api/auth/register-challenge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

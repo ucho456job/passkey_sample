@@ -39,7 +39,7 @@ func (u *WebAuthnUser) WebAuthnCredentials() []webauthn.Credential {
 	return []webauthn.Credential{}
 }
 
-func Challenge(c *gin.Context) {
+func ChallengeForRegister(c *gin.Context) {
 	user := WebAuthnUser{
 		ID:          []byte("dff8fd7b-a10f-4e33-8b60-a54d7ab4f5be"),
 		Name:        "John Doe",
