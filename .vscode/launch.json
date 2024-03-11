@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch API Server",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "./main.go",
+      "showLog": true,
+      "env": {
+        "GIN_MODE": "debug"
+      }
+    }
+  ]
+}
