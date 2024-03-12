@@ -20,10 +20,10 @@ func main() {
 		c.File("./template/build/index.html")
 	})
 
-	router.POST("/api/auth/register-challenge", handler.ChallengeForRegister)
+	router.POST("/api/auth/register_challenge", handler.ChallengeForRegister)
 	router.POST("/api/auth/passkeys", handler.Register)
-	router.POST("/api/auth/login-challenge", handler.ChallengeForLogin)
-	router.POST("/passkey-session", handler.Login)
+	router.POST("/api/auth/session_challenge", handler.ChallengeForLogin)
+	router.POST("/passkey_session", handler.Login)
 
 	router.Run(":8080")
 }

@@ -16,7 +16,7 @@ export default function Register() {
 
     try {
       // Receive a challenge from the server
-      const challengeResponse = await fetch('/api/auth/register-challenge', {
+      const challengeResponse = await fetch('/api/auth/register_challenge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -25,6 +25,14 @@ export default function Register() {
       const challengeData = await challengeResponse.json();
       challengeData.publicKey.challenge = base64UrlStringToArrayBuffer(challengeData.publicKey.challenge);
       challengeData.publicKey.user.id = base64UrlStringToArrayBuffer(challengeData.publicKey.user.id);
+      if (challengeData.publicKey.excludeCredentials) {
+        challengeData.publicKey.excludeCredentials = challengeData.publicKey.excludeCredentials.map(cred => {
+          return {
+            ...cred,
+            id: base64UrlStringToArrayBuffer(cred.id),
+          };
+        });
+      }
       console.log('encoded challenge response: ', challengeData);
 
       // Get the authenticator response

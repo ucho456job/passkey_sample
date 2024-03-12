@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -60,9 +61,32 @@ func ChallengeForRegister(c *gin.Context) {
 		DisplayName: userData.Name,
 	}
 
+	// Get existing credentials
+	var existingCredentials []PublicKeyCredential
+	if result := config.DB.Table("public_key_credentials").Where("user_id = ?", userID).Find(&existingCredentials); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database for existing credentials"})
+		return
+	}
+	excludeCredentials := make([]protocol.CredentialDescriptor, len(existingCredentials))
+	for i, cred := range existingCredentials {
+		credentialID, err := base64.RawURLEncoding.DecodeString(cred.CredentialID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode credential ID"})
+			return
+		}
+		excludeCredentials[i] = protocol.CredentialDescriptor{
+			Type:         protocol.PublicKeyCredentialType,
+			CredentialID: credentialID,
+		}
+	}
+
 	// Begin registration
 	options, sessionData, err := config.WebAuthn.BeginRegistration(
 		&user,
+		webauthn.WithExclusions(excludeCredentials),
+		webauthn.WithAuthenticatorSelection(protocol.AuthenticatorSelection{
+			UserVerification: protocol.VerificationRequired,
+		}),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to begin registration"})

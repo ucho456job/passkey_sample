@@ -24,7 +24,7 @@ const LoginForm = () => {
 
     try {
       // Receive a challenge from the server
-      const challengeResponse = await fetch('/api/auth/login-challenge', {
+      const challengeResponse = await fetch('/api/auth/session_challenge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -53,7 +53,7 @@ const LoginForm = () => {
         console.log('create login request body: ', credentials);
 
         // Send the authenticator response to the server
-        const loginResponse = await fetch('/passkey-session', {
+        const loginResponse = await fetch('/passkey_session', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
