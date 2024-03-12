@@ -11,16 +11,19 @@ const LoginForm = () => {
     setIsCredentialRequestPending(true);
 
     console.log('sendAuthenticatorResponseIfWebauthnAvailable')
-    try {
-      if (!(navigator.credentials &&
-        navigator.credentials.create &&
-        navigator.credentials.get &&
-        window.PublicKeyCredential &&
-        /* global PublicKeyCredential */
-        await PublicKeyCredential.isConditionalMediationAvailable())) {
-        return;
-      }
 
+    // Check if the browser supports WebAuthn
+    if (!(navigator.credentials &&
+      navigator.credentials.create &&
+      navigator.credentials.get &&
+      window.PublicKeyCredential &&
+      /* global PublicKeyCredential */
+      await PublicKeyCredential.isConditionalMediationAvailable())) {
+      return;
+    }
+
+    try {
+      // Receive a challenge from the server
       const challengeResponse = await fetch('/api/auth/login-challenge', {
         method: 'POST',
         headers: {
@@ -28,11 +31,10 @@ const LoginForm = () => {
         },
       });
       const challengeData = await challengeResponse.json();
-      console.log('challenge response: ', challengeData);
-
       challengeData.publicKey.challenge = base64UrlStringToArrayBuffer(challengeData.publicKey.challenge);
       console.log('encoded challenge response: ', challengeData);
 
+      // Get the authenticator response
       const result = await navigator.credentials.get({ publicKey: challengeData.publicKey, mediation: 'conditional' });
       console.log("navigatore.credentials.get result: ", result);
 
@@ -50,6 +52,7 @@ const LoginForm = () => {
         };
         console.log('create login request body: ', credentials);
 
+        // Send the authenticator response to the server
         const loginResponse = await fetch('/passkey-session', {
           method: 'POST',
           headers: {
@@ -62,9 +65,9 @@ const LoginForm = () => {
         console.log('create login response: ', loginData);
         alert(`${loginData.loginUser} is logged in!`)
       }
-    } catch (e) {
-      console.log(e);
-      return null;
+    } catch (err) {
+      console.error('Error:', err);
+      alert('An error occurred.');
     } finally {
       setIsCredentialRequestPending(false);
     }

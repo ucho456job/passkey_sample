@@ -3,7 +3,19 @@ import { base64UrlStringToArrayBuffer, arrayBufferToBase64Url } from './util';
 export default function Register() {
   const handleGeneratePasskey = async () => {
     console.log('handleGeneratePasskey')
+
+    // Check if the browser supports WebAuthn
+    if (!(navigator.credentials &&
+      navigator.credentials.create &&
+      navigator.credentials.get &&
+      window.PublicKeyCredential &&
+      /* global PublicKeyCredential */
+      await PublicKeyCredential.isConditionalMediationAvailable())) {
+      return;
+    }
+
     try {
+      // Receive a challenge from the server
       const challengeResponse = await fetch('/api/auth/register-challenge', {
         method: 'POST',
         headers: {
@@ -11,38 +23,39 @@ export default function Register() {
         },
       });
       const challengeData = await challengeResponse.json();
-      console.log('challenge response: ', challengeData);
-
       challengeData.publicKey.challenge = base64UrlStringToArrayBuffer(challengeData.publicKey.challenge);
       challengeData.publicKey.user.id = base64UrlStringToArrayBuffer(challengeData.publicKey.user.id);
-
       console.log('encoded challenge response: ', challengeData);
 
+      // Get the authenticator response
       const result = await navigator.credentials.create(challengeData);
       console.log("navigatore.credentials.create result: ", result);
 
-      const credentials = {
-        id: result.id,
-        type: result.type,
-        rawId: arrayBufferToBase64Url(result.rawId),
-        response: {
-          clientDataJSON: arrayBufferToBase64Url(result.response.clientDataJSON),
-          attestationObject: arrayBufferToBase64Url(result.response.attestationObject),
-        },
-      };
-      console.log('create passkey request body: ', credentials);
-
-      const passkeyResponse = await fetch('/api/auth/passkey', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      const passkeyData = await passkeyResponse.json();
-      console.log('create passkey response: ', passkeyData);
-      alert('Passkey created successfully!')
+      if (result) {
+        const credentials = {
+          id: result.id,
+          type: result.type,
+          rawId: arrayBufferToBase64Url(result.rawId),
+          response: {
+            clientDataJSON: arrayBufferToBase64Url(result.response.clientDataJSON),
+            attestationObject: arrayBufferToBase64Url(result.response.attestationObject),
+          },
+        };
+        console.log('create passkey request body: ', credentials);
+  
+        // Send the authenticator response to the server
+        const passkeyResponse = await fetch('/api/auth/passkey', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+        });
+  
+        const passkeyData = await passkeyResponse.json();
+        console.log('create passkey response: ', passkeyData);
+        alert('Passkey created successfully!')
+      }
     } catch (err) {
       console.error('Error:', err);
       alert('An error occurred.');
