@@ -12,10 +12,16 @@ run:
 	go run main.go
 
 migrate_up:
-	@migrate -path ./migrations -database "postgres://user:password@localhost:5432/passkey_db?sslmode=disable" up
+	@migrate -path ./db/migrations -database "postgres://user:password@localhost:5432/passkey_db?sslmode=disable" up
 
 migrate_down:
-	@migrate -path ./migrations -database "postgres://user:password@localhost:5432/passkey_db?sslmode=disable" down
+	@migrate -path ./db/migrations -database "postgres://user:password@localhost:5432/passkey_db?sslmode=disable" down
+
+insert_data:
+	@PGPASSWORD=password psql -U user -h localhost -d passkey_db -f ./db/data/insert.sql
+
+clear_data:
+	@PGPASSWORD=password psql -U user -h localhost -d passkey_db -f ./db/data/clear.sql
 
 migrate_reset:
 	$(MAKE) migrate_down
