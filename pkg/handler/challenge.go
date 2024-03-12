@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-webauthn/webauthn/protocol"
@@ -40,13 +41,26 @@ func (u *WebAuthnUser) WebAuthnCredentials() []webauthn.Credential {
 	return u.Credentials
 }
 
+type UserData struct {
+	ID   string `gorm:"primary_key;column:user_id"`
+	Name string `gorm:"column:name"`
+}
+
 func ChallengeForRegister(c *gin.Context) {
+	// Get user data
+	userID := "dff8fd7b-a10f-4e33-8b60-a54d7ab4f5be"
+	var userData UserData
+	if result := config.DB.Table("users").Where("user_id = ?", userID).First(&userData); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database for users"})
+		return
+	}
 	user := WebAuthnUser{
-		ID:          []byte("dff8fd7b-a10f-4e33-8b60-a54d7ab4f5be"),
-		Name:        "John Doe",
-		DisplayName: "John Doe",
+		ID:          []byte(userID),
+		Name:        userData.Name,
+		DisplayName: userData.Name,
 	}
 
+	// Begin registration
 	options, sessionData, err := config.WebAuthn.BeginRegistration(
 		&user,
 	)
@@ -55,13 +69,14 @@ func ChallengeForRegister(c *gin.Context) {
 		return
 	}
 
+	// Save session data to Redis
 	sessionDataJSON, err := json.Marshal(sessionData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal session data"})
 		return
 	}
 	sessionKey := fmt.Sprintf("webauthn_challenge_register:%s", user.ID)
-	err = config.Redis.Set(context.Background(), sessionKey, sessionDataJSON, 0).Err() // 期限を設定しない場合は0
+	err = config.Redis.Set(context.Background(), sessionKey, sessionDataJSON, 5*time.Minute).Err()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session data to Redis"})
 		return
@@ -77,19 +92,21 @@ func LoginOption() webauthn.LoginOption {
 }
 
 func ChallengeForLogin(c *gin.Context) {
+	// Begin login
 	options, sessionData, err := config.WebAuthn.BeginDiscoverableLogin(LoginOption())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to begin registration"})
 		return
 	}
 
+	// Save session data to Redis
 	sessionDataJSON, err := json.Marshal(sessionData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal session data"})
 		return
 	}
 	sessionKey := fmt.Sprintf("webauthn_challenge_login:%s", options.Response.Challenge)
-	err = config.Redis.Set(context.Background(), sessionKey, sessionDataJSON, 0).Err() // 期限を設定しない場合は0
+	err = config.Redis.Set(context.Background(), sessionKey, sessionDataJSON, 5*time.Minute).Err()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session data to Redis"})
 		return

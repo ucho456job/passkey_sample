@@ -44,7 +44,7 @@ export default function Register() {
         console.log('create passkey request body: ', credentials);
   
         // Send the authenticator response to the server
-        const passkeyResponse = await fetch('/api/auth/passkey', {
+        const passkeyResponse = await fetch('/api/auth/passkeys', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ dependencies_stop:
 	docker compose down
 
 front_build:
+	@cd template && npm install
 	@cd template && npm run build
 
 run: ## Run the project

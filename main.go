@@ -21,7 +21,7 @@ func main() {
 	})
 
 	router.POST("/api/auth/register-challenge", handler.ChallengeForRegister)
-	router.POST("/api/auth/passkey", handler.Register)
+	router.POST("/api/auth/passkeys", handler.Register)
 	router.POST("/api/auth/login-challenge", handler.ChallengeForLogin)
 	router.POST("/passkey-session", handler.Login)
 

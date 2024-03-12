@@ -24,15 +24,20 @@ type PublicKeyCredential struct {
 }
 
 func Register(c *gin.Context) {
-	// ユーザー情報を取得
+	// Get user data
 	userID := "dff8fd7b-a10f-4e33-8b60-a54d7ab4f5be"
+	var userData UserData
+	if result := config.DB.Table("users").Where("user_id = ?", userID).First(&userData); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database for users"})
+		return
+	}
 	user := WebAuthnUser{
 		ID:          []byte(userID),
-		Name:        "test-email-01@example.com",
-		DisplayName: "John Doe",
+		Name:        userData.Name,
+		DisplayName: userData.Name,
 	}
 
-	// セッションデータを取得
+	// Get session data
 	sessionKey := fmt.Sprintf("webauthn_challenge_register:%s", userID)
 	result, err := config.Redis.Get(context.Background(), sessionKey).Result()
 	if err != nil {
@@ -46,7 +51,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// セッションデータを使って認証情報を取得
+	// Finish registration
 	credential, err := config.WebAuthn.FinishRegistration(&user, sessionData, c.Request)
 	if err != nil {
 		fmt.Println(err)
@@ -65,6 +70,7 @@ func Register(c *gin.Context) {
 		UserAgent:       "user_agent_dummy",
 	}
 
+	// Save credential to database
 	if result := config.DB.Table("public_key_credentials").Create(&newCredential); result.Error != nil {
 		fmt.Println(result.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save credential"})

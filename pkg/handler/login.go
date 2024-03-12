@@ -12,18 +12,15 @@ import (
 	"github.com/ucho456job/passkey_sample/pkg/config"
 )
 
-type UserData struct {
-	ID   string `gorm:"primary_key;column:user_id"`
-	Name string `gorm:"column:name"`
-}
-
 func Login(c *gin.Context) {
+	// Parse the response
 	parsedResponse, err := protocol.ParseCredentialRequestResponse(c.Request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse credential request response"})
 		return
 	}
 
+	// Get session data
 	sessionKey := fmt.Sprintf("webauthn_challenge_login:%s", parsedResponse.Response.CollectedClientData.Challenge)
 	result, err := config.Redis.Get(c, sessionKey).Result()
 	if err != nil {
@@ -37,6 +34,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// Creating handlers required for authentication
 	var userName string
 	handler := func(rawID, userHandle []byte) (user webauthn.User, err error) {
 		userID := string(userHandle)
@@ -81,6 +79,8 @@ func Login(c *gin.Context) {
 		}
 		return user, nil
 	}
+
+	// Validate the login
 	_, err = config.WebAuthn.ValidateDiscoverableLogin(handler, sessionData, parsedResponse)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
