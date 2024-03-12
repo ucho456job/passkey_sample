@@ -16,7 +16,7 @@
    ```
 3. **Database Migration**:
 
-   Run migrations and seed the database with initial data:
+   Run migrations:
 
    ```sh
    make migrate_up
@@ -36,3 +36,12 @@
    make run
    ```
    Or alternatively, if you're using VSCode with a configured launch.json, you can start the server using the IDE's debug feature.
+
+## Note
+You cannot create duplicate authentication, so if you want to try again, please initialize the seed data with the command below:
+
+```sh
+make clear_data
+make insert_data
+```
+
