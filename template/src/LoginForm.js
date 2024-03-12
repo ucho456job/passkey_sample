@@ -60,7 +60,7 @@ const LoginForm = () => {
 
         const loginData = await loginResponse.json();
         console.log('create login response: ', loginData);
-        alert('Login successful!')
+        alert(`${loginData.loginUser} is logged in!`)
       }
     } catch (e) {
       console.log(e);

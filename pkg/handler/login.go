@@ -12,6 +12,11 @@ import (
 	"github.com/ucho456job/passkey_sample/pkg/config"
 )
 
+type UserData struct {
+	ID   string `gorm:"primary_key;column:user_id"`
+	Name string `gorm:"column:name"`
+}
+
 func Login(c *gin.Context) {
 	parsedResponse, err := protocol.ParseCredentialRequestResponse(c.Request)
 	if err != nil {
@@ -32,9 +37,16 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	var userName string
 	handler := func(rawID, userHandle []byte) (user webauthn.User, err error) {
-		var creds []PublicKeyCredential
 		userID := string(userHandle)
+		var userData UserData
+		if result := config.DB.Table("users").Where("user_id = ?", userID).First(&userData); result.Error != nil {
+			return nil, fmt.Errorf("failed to query database for users: %w", result.Error)
+		}
+		userName = userData.Name
+
+		var creds []PublicKeyCredential
 		if result := config.DB.Table("public_key_credentials").Where("user_id = ?", userID).Find(&creds); result.Error != nil {
 			return nil, fmt.Errorf("failed to query database for credentials: %w", result.Error)
 		}
@@ -62,12 +74,11 @@ func Login(c *gin.Context) {
 
 		user = &WebAuthnUser{
 			ID:          userHandle,
-			Name:        "John Doe",
-			DisplayName: "John Doe",
+			Name:        userData.Name,
+			DisplayName: userData.Name,
 			Icon:        "",
 			Credentials: webAuthnCreds,
 		}
-		fmt.Println("userID: ", userID)
 		return user, nil
 	}
 	_, err = config.WebAuthn.ValidateDiscoverableLogin(handler, sessionData, parsedResponse)
@@ -76,5 +87,5 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Authentication successful"})
+	c.JSON(http.StatusOK, gin.H{"loginUser": userName})
 }
