@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/ucho456job/passkey_sample/pkg/config"
 )
@@ -36,7 +37,7 @@ func (u *WebAuthnUser) WebAuthnIcon() string {
 }
 
 func (u *WebAuthnUser) WebAuthnCredentials() []webauthn.Credential {
-	return []webauthn.Credential{}
+	return u.Credentials
 }
 
 func ChallengeForRegister(c *gin.Context) {
@@ -60,6 +61,34 @@ func ChallengeForRegister(c *gin.Context) {
 		return
 	}
 	sessionKey := fmt.Sprintf("webauthn_challenge_register:%s", user.ID)
+	err = config.Redis.Set(context.Background(), sessionKey, sessionDataJSON, 0).Err() // 期限を設定しない場合は0
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session data to Redis"})
+		return
+	}
+
+	c.JSON(http.StatusOK, options)
+}
+
+func LoginOption() webauthn.LoginOption {
+	return func(opts *protocol.PublicKeyCredentialRequestOptions) {
+		opts.UserVerification = protocol.VerificationRequired
+	}
+}
+
+func ChallengeForLogin(c *gin.Context) {
+	options, sessionData, err := config.WebAuthn.BeginDiscoverableLogin(LoginOption())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to begin registration"})
+		return
+	}
+
+	sessionDataJSON, err := json.Marshal(sessionData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal session data"})
+		return
+	}
+	sessionKey := fmt.Sprintf("webauthn_challenge_login:%s", options.Response.Challenge)
 	err = config.Redis.Set(context.Background(), sessionKey, sessionDataJSON, 0).Err() // 期限を設定しない場合は0
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session data to Redis"})

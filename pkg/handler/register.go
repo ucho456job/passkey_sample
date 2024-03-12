@@ -13,13 +13,14 @@ import (
 )
 
 type PublicKeyCredential struct {
-	CredentialID      string `gpr,:"column:id" gorm:"primaryKey"`
-	UserID            string `gpr,:"column:user_id"`
-	PublicKey         string `gpr,:"column:public_key"`
-	AttestationFormat string `gorm:"column:attestation_format"`
-	AAGUID            string `gorm:"column:aagu_id"`
-	Platform          string `gpr,:"column:platform"`
-	UserAgent         string `gpr,:"column:user_agent"`
+	CredentialID    string `gorm:"primary_key;column:credential_id"`
+	UserID          string `gorm:"column:user_id"`
+	PublicKey       string `gorm:"column:public_key"`
+	AttestationType string `gorm:"column:attestation_type"`
+	SignCount       uint32 `gorm:"column:sign_count"`
+	AAGUID          string `gorm:"column:aagu_id"`
+	Platform        string `gorm:"column:platform"`
+	UserAgent       string `gorm:"column:user_agent"`
 }
 
 func Register(c *gin.Context) {
@@ -53,21 +54,15 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	credentialID := base64.RawURLEncoding.EncodeToString(credential.ID)
-	publicKey := base64.RawURLEncoding.EncodeToString(credential.PublicKey)
-	attestationFormat := credential.AttestationType
-	aaguID := base64.StdEncoding.EncodeToString(credential.Authenticator.AAGUID)
-	platform := "platform_dummy"
-	userAgent := "user_agent_dummy"
-
 	newCredential := PublicKeyCredential{
-		CredentialID:      credentialID,
-		UserID:            userID,
-		PublicKey:         publicKey,
-		AttestationFormat: attestationFormat,
-		AAGUID:            aaguID,
-		Platform:          platform,
-		UserAgent:         userAgent,
+		CredentialID:    base64.RawURLEncoding.EncodeToString(credential.ID),
+		UserID:          userID,
+		PublicKey:       base64.RawURLEncoding.EncodeToString(credential.PublicKey),
+		AttestationType: credential.AttestationType,
+		SignCount:       credential.Authenticator.SignCount,
+		AAGUID:          base64.StdEncoding.EncodeToString(credential.Authenticator.AAGUID),
+		Platform:        "platform_dummy",
+		UserAgent:       "user_agent_dummy",
 	}
 
 	if result := config.DB.Table("public_key_credentials").Create(&newCredential); result.Error != nil {
