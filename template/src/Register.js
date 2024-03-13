@@ -16,7 +16,7 @@ export default function Register() {
 
     try {
       // Receive a challenge from the server
-      const challengeResponse = await fetch('/api/auth/register_challenge', {
+      const challengeResponse = await fetch('/register_challenge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -52,7 +52,7 @@ export default function Register() {
         console.log('create passkey request body: ', credentials);
   
         // Send the authenticator response to the server
-        const passkeyResponse = await fetch('/api/auth/passkeys', {
+        const passkeyResponse = await fetch('/passkeys', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -24,7 +24,7 @@ const LoginForm = () => {
 
     try {
       // Receive a challenge from the server
-      const challengeResponse = await fetch('/api/auth/session_challenge', {
+      const challengeResponse = await fetch('/session_challenge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
