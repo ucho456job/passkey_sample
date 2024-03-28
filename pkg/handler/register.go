@@ -25,7 +25,7 @@ type PublicKeyCredential struct {
 
 func Register(c *gin.Context) {
 	// Get user data
-	userID := "dff8fd7b-a10f-4e33-8b60-a54d7ab4f5be"
+	userID := "1b2fa70d-8416-42c3-a789-96c4817129ea"
 	var userData UserData
 	if result := config.DB.Table("users").Where("user_id = ?", userID).First(&userData); result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database for users"})
